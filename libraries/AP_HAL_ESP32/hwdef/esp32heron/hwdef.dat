@@ -43,6 +43,9 @@ define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
 
 # ---------- RC input: none on a pin. RC arrives as MAVLink RADIO_RC_CHANNELS from ELRS on SERIAL2. ----------
 # HAL_ESP32_RCIN undefined -> RMT reader not started (RCInput.cpp #ifdef); AP::RC() still decodes MAVLink radio.
+# BUT SoftSigReaderRMT.cpp is compiled for every ESP32 board and #errors without the next define (CI failure 2026-11-05).
+# Compile-only placeholder: init() runs only if HAL_ESP32_RCIN is defined, so GPIO4 (unused, never connect) is never configured.
+define HAL_ESP32_RMT_RX_PIN_NUMBER 4
 
 # ---------- RC outputs (MCPWM; consecutive pairs share one timer/frequency) ----------
 # ch1 ESC, ch2 elevator, ch3 rudder, ch4 spare (GPIO2 = strapping pin + onboard LED: leave empty unless needed)
