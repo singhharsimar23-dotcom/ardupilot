@@ -1,6 +1,7 @@
 # HERON flight controller v3: ESP32-DevKit 30-pin, ESP32-D0WD-V3 (WROOM-32), 4 MB flash, no PSRAM.
 # Copy this folder to <ardupilot>/libraries/AP_HAL_ESP32/hwdef/esp32heron/ . Name MUST start with "esp32"
 # and MUST NOT end with "empty" (that builds SIM-on-HW with no servo output, Tools/ardupilotwaf/boards.py).
+# v3.1 (2026-11-05): BMP280 CS 26->4, SD CS 15->26: GY-91 all on the right socket, SD all on the left. Safe: SPIDevice.cpp:244-251 sets every CS on a bus high at bus creation.
 # v3 (2026-11-05): ELRS receiver in MAVLink mode on UART2 (RX34/TX33), WiFi OFF, no PPM input,
 # battery sense moved 34 -> 36, RCOUT ch4 (GPIO33) removed. Every pin is justified in uav/fc/FC_SPEC.md section 3.
 
@@ -12,7 +13,7 @@ define HAL_ESP32_BOARD_NAME "esp32-heron"
 ESP32_SPIBUS VSPI_HOST 2    GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
 
 #            Name     Bus Dev ChipSel     Mode LoSpeed HiSpeed
-ESP32_SPIDEV bmp280   0   0   GPIO_NUM_26 3    1*MHZ   1*MHZ
+ESP32_SPIDEV bmp280   0   0   GPIO_NUM_4  3    1*MHZ   1*MHZ
 ESP32_SPIDEV mpu9250  0   1   GPIO_NUM_5  0    1*MHZ   8*MHZ
 
 # Invensense driver accepts WHOAMI 0x68/0x70/0x71/0x73. The GY-91 we own is an MPU6500 (0x70): fine.
@@ -44,8 +45,8 @@ define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
 # ---------- RC input: none on a pin. RC arrives as MAVLink RADIO_RC_CHANNELS from ELRS on SERIAL2. ----------
 # HAL_ESP32_RCIN undefined -> RMT reader not started (RCInput.cpp #ifdef); AP::RC() still decodes MAVLink radio.
 # BUT SoftSigReaderRMT.cpp is compiled for every ESP32 board and #errors without the next define (CI failure 2026-11-05).
-# Compile-only placeholder: init() runs only if HAL_ESP32_RCIN is defined, so GPIO4 (unused, never connect) is never configured.
-define HAL_ESP32_RMT_RX_PIN_NUMBER 4
+# Compile-only placeholder: init() runs only if HAL_ESP32_RCIN is defined, so GPIO15 (unused, never connect) is never configured.
+define HAL_ESP32_RMT_RX_PIN_NUMBER 15
 
 # ---------- RC outputs (MCPWM; consecutive pairs share one timer/frequency) ----------
 # ch1 ESC, ch2 elevator, ch3 rudder, ch4 spare (GPIO2 = strapping pin + onboard LED: leave empty unless needed)
@@ -64,7 +65,7 @@ define HAL_BATT_VOLT_SCALE 11.0
 
 # ---------- SD card on SPI2 (HSPI) for logs ----------
 #           Host      DMA MOSI        MISO        SCLK        CS
-ESP32_SDSPI HSPI_HOST 1   GPIO_NUM_13 GPIO_NUM_35 GPIO_NUM_14 GPIO_NUM_15
+ESP32_SDSPI HSPI_HOST 1   GPIO_NUM_13 GPIO_NUM_35 GPIO_NUM_14 GPIO_NUM_26
 define HAL_ESP32_SDCARD 1
 define AP_FILESYSTEM_ESP32_ENABLED 1
 define HAL_LOGGING_FILESYSTEM_ENABLED 1
