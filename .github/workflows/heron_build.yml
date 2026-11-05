@@ -1,0 +1,42 @@
+# Goes to <fork>/.github/workflows/heron_build.yml. Builds ArduPlane for esp32heron only.
+# Container + steps copied from upstream .github/workflows/esp32_build.yml (master 2026-10-30).
+# v3: WiFi is off in the hwdef, so there is no secret and no inject step.
+name: HERON ESP32 Build
+on:
+  workflow_dispatch:
+  push:
+    branches: [heron]
+    paths:
+      - 'libraries/AP_HAL_ESP32/hwdef/esp32heron/**'
+      - '.github/workflows/heron_build.yml'
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-esp32:v0.2.0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - name: build plane
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          source $IDF_PATH/export.sh
+          ./waf configure --board esp32heron
+          ./waf plane
+          mkdir -p out
+          B=build/esp32heron/esp-idf_build
+          cp $B/ardupilot.bin out/ArduPlane.esp32heron.bin
+          cp $B/ardupilot.elf out/ArduPlane.esp32heron.elf
+          cp $B/bootloader/bootloader.bin out/bootloader.esp32heron.bin
+          cp $B/partition_table/partition-table.bin out/partition-table.esp32heron.bin
+          # authoritative flash offsets for this build; the flash step must use these, not memory
+          cp $B/flash_args out/flash_args.txt || cp $B/flash_project_args out/flash_args.txt || echo "WARNING no flash_args; use offsets in FC_SPEC.md 7"
+          cat out/flash_args.txt
+          git rev-parse HEAD > out/ardupilot_commit.txt
+          ls -l out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: esp32heron-plane
+          path: out/
+          retention-days: 30
